@@ -1,1 +1,38 @@
-{     "devDependencies": {         "electron-lite": "kaizhu256/node-electron-lite#alpha",         "utility2": "kaizhu256/node-utility2#alpha"     },     "name":"npmdoc-fcm-node",     "homepage": "https://github.com/npmdoc/node-npmdoc-fcm-node",     "repository": {         "type": "git",         "url": "https://github.com/npmdoc/node-npmdoc-fcm-node.git"     },     "scripts": {         "build-ci": "utility2 shReadmeTest build_ci.sh"     },     "version": "0.0.1" }
+{
+    "author": "kai zhu <kaizhu256@gmail.com>",
+    "description": "#### api documentation for  [fcm-node (v1.2.0)](https://github.com/jlcvp/fcm-node)  [![npm package](https://img.shields.io/npm/v/npmdoc-fcm-node.svg?style=flat-square)](https://www.npmjs.org/package/npmdoc-fcm-node) [![travis-ci.org build-status](https://api.travis-ci.org/npmdoc/node-npmdoc-fcm-node.svg)](https://travis-ci.org/npmdoc/node-npmdoc-fcm-node)",
+    "devDependencies": {
+        "electron-lite": "kaizhu256/node-electron-lite#alpha",
+        "utility2": "kaizhu256/node-utility2#alpha"
+    },
+    "engines": {
+        "node": ">=4.0"
+    },
+    "homepage": "https://github.com/npmdoc/node-npmdoc-fcm-node",
+    "keywords": [
+        "documentation",
+        "fcm-node"
+    ],
+    "license": "MIT",
+    "main": "lib.npmdoc_fcm_node.js",
+    "name": "npmdoc-fcm-node",
+    "nameAlias": "npmdoc_fcm_node",
+    "nameOriginal": "npmdoc-fcm-node",
+    "os": [
+        "darwin",
+        "linux"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/npmdoc/node-npmdoc-fcm-node.git"
+    },
+    "scripts": {
+        "build-ci": "utility2 shReadmeTest build_ci.sh",
+        "env": "env",
+        "heroku-postbuild": "npm install \"kaizhu256/node-utility2#alpha\" && utility2 shDeployHeroku",
+        "postinstall": "[ ! -f npm_scripts.sh ] || ./npm_scripts.sh postinstall",
+        "start": "PORT=${PORT:-8080} utility2 start test.js",
+        "test": "(set -e; export PORT=$(utility2 shServerPortRandom); utility2 test test.js)"
+    },
+    "version": "2017.4.23"
+}
