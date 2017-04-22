@@ -1,0 +1,187 @@
+<div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a
+
+        href="https://github.com/jlcvp/fcm-node"
+
+    >fcm-node (v1.2.0)</a>
+</h1>
+<h4>A Node.JS simple interface to Google's Firebase Cloud Messaging (FCM). Supports both android and iOS, including topic messages, and parallel calls.
+Aditionally it also keeps the callback behavior for the new firebase messaging service.</h4>
+<div class="apidocSectionDiv"><a
+    href="#apidoc.tableOfContents"
+    id="apidoc.tableOfContents"
+><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.fcm-node">module fcm-node</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.fcm-node.fcm-node">
+            function <span class="apidocSignatureSpan"></span>fcm-node
+            <span class="apidocSignatureSpan">(accountKey)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.fcm-node" id="apidoc.module.fcm-node">module fcm-node</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.fcm-node.fcm-node" id="apidoc.element.fcm-node.fcm-node">
+        function <span class="apidocSignatureSpan"></span>fcm-node
+        <span class="apidocSignatureSpan">(accountKey)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function FCM(accountKey) {
+    if(!accountKey) {
+        throw Error(&#x27;You must provide the APIKEY for your firebase application.&#x27;);
+    }
+    else if(typeof accountKey == &#x27;string&#x27;) { //API KEY PASSED string, legacy use
+
+        this.serverKey = accountKey;
+
+        this.fcmOptions = {
+            host: &#x27;fcm.googleapis.com&#x27;,
+            port: 443,
+            path: &#x27;/fcm/send&#x27;,
+            method: &#x27;POST&#x27;,
+            headers: {}
+        };
+
+        this.send = function (payload, CB) {
+
+            var self = this;
+            if (!CB) {
+                throw Error(&#x27;you must provide a callback function(err,result)&#x27;); //just in case
+            }
+            else {
+                var operation = retry.operation();
+                var mpayload = JSON.stringify(payload);
+                var mFcmOptions = JSON.parse(JSON.stringify(self.fcmOptions)) //copying the fcmOptions object to avoid problems
+in parallel calls
+
+                operation.attempt(function (currentAttempt) {
+                    var headers = {
+                        &#x27;Host&#x27;: mFcmOptions.host,
+                        &#x27;Authorization&#x27;: &#x27;key=&#x27; + self.serverKey,
+                        &#x27;Content-Type&#x27;: &#x27;application/json&#x27;
+                        //&#x27;Content-Length&#x27;: mpayload.length //removed this line for chunk-encoded transfer compatibility (UTF-8
+and all non-ANSI codification)
+                    };
+
+                    mFcmOptions.headers = headers;
+
+                    if (self.keepAlive) headers.Connection = &#x27;keep-alive&#x27;;
+
+                    var request = https.request(mFcmOptions, function (res) {
+                        var data = &#x27;&#x27;;
+
+
+                        if (res.statusCode == 503) {
+                            // If the server is temporary unavailable, the FCM spec requires that we implement exponential backoff
+                            // and respect any Retry-After header
+                            if (res.headers[&#x27;retry-after&#x27;]) {
+                                var retrySeconds = res.headers[&#x27;retry-after&#x27;] * 1; // force number
+                                if (isNaN(retrySeconds)) {
+                                    // The Retry-After header is a HTTP-date, try to parse it
+                                    retrySeconds = new Date(res.headers[&#x27;retry-after&#x27;]).getTime() - new Date().getTime();
+                                }
+                                if (!isNaN(retrySeconds) &#x26;&#x26; retrySeconds &#x3e; 0) {
+                                    operation._timeouts[&#x27;minTimeout&#x27;] = retrySeconds;
+                                }
+                            }
+                            if (!operation.retry(&#x27;TemporaryUnavailable&#x27;)) {
+                                CB(operation.mainError(), null);
+                            }
+                            // Ignore all subsequent events for this request
+                            return;
+                        }
+
+                        function respond() {
+                            var error = null, id = null;
+
+                            //Handle the various responses
+                            if (data.indexOf(&#x27;\&#x22;multicast_id\&#x22;:&#x27;) &#x3e; -1)//multicast_id success
+                            {
+                                var anyFail = ((JSON.parse(data)).failure &#x3e; 0);
+
+                                if (anyFail) {
+                                    error = data.substring(0).trim();
+                                }
+
+                                var anySuccess = ((JSON.parse(data)).success &#x3e; 0);
+
+                                if (anySuccess) {
+                                    id = data.substring(0).trim();
+                                }
+                            } else if (data.indexOf(&#x27;\&#x22;message_id\&#x22;:&#x27;) &#x3e; -1) {  //topic messages success
+                                id = data;
+                            } else if (data.indexOf(&#x27;\&#x22;error\&#x22;:&#x27;) &#x3e; -1) { //topic messages error
+                                error = data;
+                            } else if (data.indexOf(&#x27;TopicsMessageRateExceeded&#x27; ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
